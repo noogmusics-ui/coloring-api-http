@@ -1,9 +1,0 @@
-{
-  "name": "coloring-api-http",
-  "version": "1.0.0",
-  "description": "API simples para gerar desenhos para colorir usando OpenAI Images via fetch.",
-  "main": "index.js",
-  "scripts": {
-    "start": "node api/coloring.js"
-  }
-}
