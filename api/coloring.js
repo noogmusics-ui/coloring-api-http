@@ -1,10 +1,8 @@
-import OpenAI from "openai";
+// api/coloring.js
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const OpenAI = require("openai").default;
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -15,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
   try {
@@ -24,47 +22,47 @@ export default async function handler(req, res) {
     if (!imageBase64) {
       return res.status(400).json({
         ok: false,
-        error: "imageBase64 é obrigatório",
+        error: "imageBase64 é obrigatório no body",
       });
     }
 
-    const prompt = "Transforme essa foto em um desenho infantil para colorir.";
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const prompt =
+      "Transforme essa imagem em um desenho infantil para colorir, com traços simples, bordas pretas e estilo cartoon.";
 
     const result = await client.images.generate({
       model: "gpt-image-1",
-      prompt: prompt,
+      prompt,
       size: "1024x1024",
       n: 1,
     });
 
-    const base64Image = result.data[0].b64_json;
+    const image = result.data[0].b64_json;
 
     return res.status(200).json({
       ok: true,
-      image: base64Image,
+      image,
     });
-
   } catch (error) {
-    console.error("ERRO COMPLETO:", error);
+    console.error("ERRO DA OPENAI:", error);
 
-    // CAPTURA TODAS AS FORMAS POSSÍVEIS DE ERRO DE OPENAI
-    const openaiError =
-      error?.error ||
-      error?.response?.data?.error ||
-      error;
+    // Captura mensagens úteis
+    const errorMessage =
+      error?.error?.message ||
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      "Erro desconhecido";
 
     return res.status(500).json({
       ok: false,
-      message: "Erro ao chamar OpenAI",
-      detalhe: {
-        message: openaiError?.message || null,
-        type: openaiError?.type || null,
-        code: openaiError?.code || null,
-      },
-      // para debug
+      message: "Falha ao gerar imagem",
+      detalhe: errorMessage,
       debug: {
         apiKeyExiste: !!process.env.OPENAI_API_KEY,
-      }
+      },
     });
   }
-}
+};
